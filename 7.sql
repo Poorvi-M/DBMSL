@@ -1,109 +1,279 @@
-CREATE DATABASE IF NOT EXISTS company_db;
-USE company_db;
- 
-CREATE TABLE Employee (
-    SSN       VARCHAR(10)   NOT NULL,
-    Name      VARCHAR(40)   NOT NULL,
-    Address   VARCHAR(100),
-    Sex       CHAR(1),
-    Salary    DECIMAL(10,2),
-    SuperSSN  VARCHAR(10),
-    DNo       INT,
-    CONSTRAINT pk_employee PRIMARY KEY (SSN),
-    CONSTRAINT chk_sex    CHECK (Sex IN ('M','F','O')),
-    CONSTRAINT chk_salary CHECK (Salary > 0),
-    CONSTRAINT fk_emp_super FOREIGN KEY (SuperSSN) REFERENCES Employee(SSN) ON DELETE SET NULL
+
+-- ==========================================
+-- 1. DATABASE CREATION
+-- ==========================================
+
+DROP DATABASE IF EXISTS company_pm105;
+CREATE DATABASE company_pm105;
+USE company_pm105;
+
+
+-- ==========================================
+-- 2. TABLE CREATION
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS Employee_pm105 (
+    ssn VARCHAR(35) PRIMARY KEY,
+    name VARCHAR(35) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    sex VARCHAR(7) NOT NULL,
+    salary INT NOT NULL,
+    super_ssn VARCHAR(35),
+    d_no INT,
+    FOREIGN KEY (super_ssn)
+        REFERENCES Employee_pm105(ssn)
+        ON DELETE SET NULL
 );
- 
-CREATE TABLE Department (
-    DNo           INT         NOT NULL,
-    DName         VARCHAR(30) NOT NULL,
-    MgrSSN        VARCHAR(10),
-    MgrStartDate  DATE,
-    CONSTRAINT pk_dept PRIMARY KEY (DNo),
-    CONSTRAINT uq_dname UNIQUE (DName),
-    CONSTRAINT fk_dept_mgr FOREIGN KEY (MgrSSN) REFERENCES Employee(SSN) ON DELETE SET NULL
+
+
+CREATE TABLE IF NOT EXISTS Department_pm105 (
+    d_no INT PRIMARY KEY,
+    dname VARCHAR(100) NOT NULL,
+    mgr_ssn VARCHAR(35),
+    mgr_start_date DATE,
+    FOREIGN KEY (mgr_ssn)
+        REFERENCES Employee_pm105(ssn)
+        ON DELETE CASCADE
 );
- 
-ALTER TABLE Employee ADD CONSTRAINT fk_emp_dept
-      FOREIGN KEY (DNo) REFERENCES Department(DNo) ON DELETE SET NULL;
- 
-CREATE TABLE DLocation (
-    DNo   INT         NOT NULL,
-    DLoc  VARCHAR(30) NOT NULL,
-    CONSTRAINT pk_dloc PRIMARY KEY (DNo, DLoc),
-    CONSTRAINT fk_dloc_dept FOREIGN KEY (DNo) REFERENCES Department(DNo) ON DELETE CASCADE
+
+
+CREATE TABLE IF NOT EXISTS DLocation_pm105 (
+    d_no INT NOT NULL,
+    d_loc VARCHAR(100) NOT NULL,
+    FOREIGN KEY (d_no)
+        REFERENCES Department_pm105(d_no)
+        ON DELETE CASCADE
 );
- 
-CREATE TABLE Project (
-    PNo        INT         NOT NULL,
-    PName      VARCHAR(30) NOT NULL,
-    PLocation  VARCHAR(30),
-    DNo        INT         NOT NULL,
-    CONSTRAINT pk_project PRIMARY KEY (PNo),
-    CONSTRAINT fk_proj_dept FOREIGN KEY (DNo) REFERENCES Department(DNo) ON DELETE CASCADE
+
+
+CREATE TABLE IF NOT EXISTS Project_pm105 (
+    p_no INT PRIMARY KEY,
+    p_name VARCHAR(25) NOT NULL,
+    p_loc VARCHAR(25) NOT NULL,
+    d_no INT NOT NULL,
+    FOREIGN KEY (d_no)
+        REFERENCES Department_pm105(d_no)
+        ON DELETE CASCADE
 );
- 
-CREATE TABLE Works_on (
-    SSN    VARCHAR(10) NOT NULL,
-    PNo    INT         NOT NULL,
-    Hours  DECIMAL(4,1),
-    CONSTRAINT pk_works PRIMARY KEY (SSN, PNo),
-    CONSTRAINT fk_wo_emp  FOREIGN KEY (SSN) REFERENCES Employee(SSN) ON DELETE CASCADE,
-    CONSTRAINT fk_wo_proj FOREIGN KEY (PNo) REFERENCES Project(PNo)  ON DELETE CASCADE,
-    CONSTRAINT chk_hours CHECK (Hours >= 0)
+
+
+CREATE TABLE IF NOT EXISTS WorksOn_pm105 (
+    ssn VARCHAR(35) NOT NULL,
+    p_no INT NOT NULL,
+    hours INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (ssn)
+        REFERENCES Employee_pm105(ssn)
+        ON DELETE CASCADE,
+    FOREIGN KEY (p_no)
+        REFERENCES Project_pm105(p_no)
+        ON DELETE CASCADE
 );
- 
--- Employees first (DNo left NULL), then departments, then fix DNo
-INSERT INTO Employee (SSN,Name,Address,Sex,Salary,SuperSSN,DNo) VALUES
- ('E001','Rajesh','Mysuru','M',90000,NULL,NULL);
-INSERT INTO Employee (SSN,Name,Address,Sex,Salary,SuperSSN,DNo) VALUES
- ('E002','Priya','Bengaluru','F',75000,'E001',NULL),
- ('E003','Suresh','Mysuru','M',60000,'E001',NULL),
- ('E004','Anjali','Mandya','F',55000,'E002',NULL),
- ('E005','Vikram','Hassan','M',50000,'E002',NULL);
- 
-INSERT INTO Department VALUES
- (1,'Admin','E001','2020-01-01'),(2,'Research','E002','2021-04-15'),
- (3,'Accounts','E003','2019-07-01'),(4,'Marketing','E004','2022-09-10'),
- (5,'IT','E005','2023-02-20');
- 
-UPDATE Employee SET DNo = 1 WHERE SSN = 'E001';
-UPDATE Employee SET DNo = 2 WHERE SSN = 'E002';
-UPDATE Employee SET DNo = 3 WHERE SSN = 'E003';
-UPDATE Employee SET DNo = 4 WHERE SSN = 'E004';
-UPDATE Employee SET DNo = 5 WHERE SSN = 'E005';
- 
-INSERT INTO DLocation VALUES
- (1,'Mysuru'),(2,'Bengaluru'),(3,'Mysuru'),(4,'Chennai'),(5,'Bengaluru');
- 
-INSERT INTO Project VALUES
- (1,'Payroll','Mysuru',1),(2,'Genomics','Bengaluru',2),(3,'Audit','Mysuru',3),
- (4,'Campaign','Chennai',4),(5,'Portal','Bengaluru',5);
- 
-INSERT INTO Works_on VALUES
- ('E001',1,20),('E002',2,30),('E003',3,25),('E004',4,35),('E005',5,40),('E001',2,10);
- 
--- ---- ALTER ----
-ALTER TABLE Employee ADD COLUMN Email VARCHAR(50);
-ALTER TABLE Project  ADD COLUMN Budget INT;
-ALTER TABLE Project  DROP COLUMN Budget;
- 
-ALTER TABLE Employee ADD CONSTRAINT uq_emp_email UNIQUE (Email);
-ALTER TABLE Employee DROP INDEX uq_emp_email;
- 
-ALTER TABLE Employee DROP CHECK chk_salary;
-ALTER TABLE Employee ADD CONSTRAINT chk_salary CHECK (Salary > 0);
- 
-ALTER TABLE Works_on DROP FOREIGN KEY fk_wo_proj;
-ALTER TABLE Works_on ADD CONSTRAINT fk_wo_proj
-      FOREIGN KEY (PNo) REFERENCES Project(PNo) ON DELETE CASCADE;
- 
--- ---- UPDATE / DELETE ----
-UPDATE Employee SET Salary = Salary * 1.10 WHERE DNo = 2;
-UPDATE Works_on SET Hours = 45 WHERE SSN = 'E005' AND PNo = 5;
-UPDATE Department SET MgrStartDate = '2024-01-01' WHERE DNo = 4;
- 
-DELETE FROM Works_on WHERE SSN = 'E001' AND PNo = 2;
-DELETE FROM DLocation WHERE DNo = 5 AND DLoc = 'Bengaluru';
-DELETE FROM Employee WHERE SSN = 'E005';   -- cascades Works_on; Department 5 MgrSSN set NULL
+
+
+-- ==========================================
+-- 3. INSERT RECORDS
+-- ==========================================
+
+INSERT INTO Employee_pm105 VALUES
+("01NB235", "Chandan_Krishna", "Siddartha Nagar, Mysuru",
+ "Male", 1500000, "01NB235", 5),
+
+("01NB354", "Employee_2", "Lakshmipuram, Mysuru",
+ "Female", 1200000, "01NB235", 2),
+
+("02NB254", "Employee_3", "Pune, Maharashtra",
+ "Male", 1000000, "01NB235", 4),
+
+("03NB653", "Employee_4", "Hyderabad, Telangana",
+ "Male", 2500000, "01NB354", 5),
+
+("04NB234", "Employee_5", "JP Nagar, Bengaluru",
+ "Female", 1700000, "01NB354", 1);
+
+
+INSERT INTO Department_pm105 VALUES
+(001, "Human Resources", "01NB235", "2020-10-21"),
+(002, "Quality Assesment", "03NB653", "2020-10-19"),
+(003, "System assesment", "04NB234", "2020-10-27"),
+(005, "Production", "02NB254", "2020-08-16"),
+(004, "Accounts", "01NB354", "2020-09-04");
+
+
+INSERT INTO DLocation_pm105 VALUES
+(001, "Jaynagar, Bengaluru"),
+(002, "Vijaynagar, Mysuru"),
+(003, "Chennai, Tamil Nadu"),
+(004, "Mumbai, Maharashtra"),
+(005, "Kuvempunagar, Mysuru");
+
+
+INSERT INTO Project_pm105 VALUES
+(241563, "System Testing", "Mumbai, Maharashtra", 004),
+(532678, "IOT", "JP Nagar, Bengaluru", 001),
+(453723, "Product Optimization", "Hyderabad, Telangana", 005),
+(278345, "Yeild Increase", "Kuvempunagar, Mysuru", 005),
+(426784, "Product Refinement", "Saraswatipuram, Mysuru", 002);
+
+
+INSERT INTO WorksOn_pm105 VALUES
+("01NB235", 278345, 5),
+("01NB354", 426784, 6),
+("04NB234", 532678, 3),
+("02NB254", 241563, 3),
+("03NB653", 453723, 6);
+
+
+-- ==========================================
+-- 4. DISPLAY ALL TABLES
+-- ==========================================
+
+SELECT * FROM Department_pm105;
+
+SELECT * FROM Employee_pm105;
+
+SELECT * FROM DLocation_pm105;
+
+SELECT * FROM Project_pm105;
+
+SELECT * FROM WorksOn_pm105;
+
+
+-- ==========================================
+-- 5. PROJECTS INVOLVING EMPLOYEES
+-- WHOSE LAST NAME IS SCOTT
+-- ==========================================
+
+SELECT p.p_no, p.p_name, e.name
+FROM Project_pm105 p
+JOIN Employee_pm105 e
+ON p.d_no = e.d_no
+WHERE e.name LIKE "%Krishna";
+
+
+-- ==========================================
+-- 6. SHOW SALARIES AFTER 10% RAISE
+-- FOR EMPLOYEES WORKING ON IOT PROJECT
+-- ==========================================
+
+SELECT w.ssn, e.name,
+       e.salary AS old_salary,
+       e.salary * 1.1 AS new_salary
+FROM WorksOn_pm105 w
+JOIN Employee_pm105 e
+ON w.ssn = e.ssn
+WHERE w.p_no =
+(
+    SELECT p_no
+    FROM Project_pm105
+    WHERE p_name = "IOT"
+);
+
+
+-- ==========================================
+-- 7. SALARY AGGREGATES FOR ACCOUNTS DEPARTMENT
+-- ==========================================
+
+SELECT
+    SUM(salary) AS sal_sum,
+    MAX(salary) AS sal_max,
+    MIN(salary) AS sal_min,
+    AVG(salary) AS sal_avg
+FROM Employee_pm105 e
+JOIN Department_pm105 d
+ON e.d_no = d.d_no
+WHERE d.dname = "Accounts";
+
+
+-- ==========================================
+-- 8. EMPLOYEES WORKING ON ALL PROJECTS
+-- CONTROLLED BY DEPARTMENT 1
+-- USING NOT EXISTS
+-- ==========================================
+
+SELECT e.ssn, e.name, e.d_no
+FROM Employee_pm105 e
+WHERE NOT EXISTS
+(
+    SELECT p.p_no
+    FROM Project_pm105 p
+    WHERE p.d_no = 1
+    AND p.p_no NOT IN
+    (
+        SELECT w.p_no
+        FROM WorksOn_pm105 w
+        WHERE w.ssn = e.ssn
+    )
+);
+
+
+-- ==========================================
+-- 9. DEPARTMENTS HAVING MORE THAN ONE EMPLOYEE
+-- WHO EARN MORE THAN 6,00,000
+-- ==========================================
+
+SELECT d.d_no, COUNT(*) AS employee_count
+FROM Department_pm105 d
+JOIN Employee_pm105 e
+ON e.d_no = d.d_no
+WHERE e.salary > 600000
+GROUP BY d.d_no
+HAVING COUNT(*) > 1;
+
+
+-- ==========================================
+-- 10. CREATE VIEW
+-- EMPLOYEE NAME, DEPARTMENT NAME AND LOCATION
+-- ==========================================
+
+CREATE VIEW emp_details_pm105 AS
+SELECT e.name, d.dname, dl.d_loc
+FROM Employee_pm105 e
+JOIN Department_pm105 d
+ON e.d_no = d.d_no
+JOIN DLocation_pm105 dl
+ON d.d_no = dl.d_no;
+
+
+-- DISPLAY VIEW
+
+SELECT * FROM emp_details_pm105;
+
+
+-- ==========================================
+-- 11. CREATE TRIGGER
+-- PREVENT DELETION OF PROJECTS
+-- IF EMPLOYEES ARE WORKING ON THEM
+-- ==========================================
+
+DELIMITER //
+
+CREATE TRIGGER PreventDelete_pm105
+BEFORE DELETE ON Project_pm105
+FOR EACH ROW
+BEGIN
+
+    IF EXISTS
+    (
+        SELECT *
+        FROM WorksOn_pm105
+        WHERE p_no = OLD.p_no
+    )
+    THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+        'This project has an employee assigned';
+
+    END IF;
+
+END//
+
+DELIMITER ;
+
+
+-- ==========================================
+-- 12. TEST THE TRIGGER
+-- ==========================================
+
+DELETE FROM Project_pm105
+WHERE p_no = 241563;
