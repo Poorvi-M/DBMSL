@@ -1,92 +1,264 @@
-CREATE DATABASE IF NOT EXISTS student_db;
-USE student_db;
- 
-CREATE TABLE Student (
-    regno  VARCHAR(12) NOT NULL,
-    name   VARCHAR(40) NOT NULL,
-    major  VARCHAR(30),
-    bdate  DATE,
-    CONSTRAINT pk_student PRIMARY KEY (regno)
+
+-- ==========================================
+-- 1. DATABASE CREATION
+-- ==========================================
+
+DROP DATABASE IF EXISTS pm105_enrollment;
+
+CREATE DATABASE pm105_enrollment;
+
+USE pm105_enrollment;
+
+
+-- ==========================================
+-- 2. TABLE CREATION
+-- ==========================================
+
+CREATE TABLE pm105_Student (
+    regno VARCHAR(13) PRIMARY KEY,
+    name VARCHAR(25) NOT NULL,
+    major VARCHAR(25) NOT NULL,
+    bdate DATE NOT NULL
 );
- 
-CREATE TABLE Course (
-    course_no  INT         NOT NULL,
-    cname      VARCHAR(40) NOT NULL,
-    dept       VARCHAR(30),
-    CONSTRAINT pk_course PRIMARY KEY (course_no)
+
+CREATE TABLE pm105_Course (
+    course INT PRIMARY KEY,
+    cname VARCHAR(30) NOT NULL,
+    dept VARCHAR(100) NOT NULL
 );
- 
-CREATE TABLE Textbook (
-    book_isbn   INT         NOT NULL,
-    book_title  VARCHAR(60) NOT NULL,
-    publisher   VARCHAR(40),
-    author      VARCHAR(40),
-    CONSTRAINT pk_textbook PRIMARY KEY (book_isbn)
+
+CREATE TABLE pm105_Enroll (
+    regno VARCHAR(13),
+    course INT,
+    sem INT NOT NULL,
+    marks INT NOT NULL,
+    FOREIGN KEY (regno)
+        REFERENCES pm105_Student(regno)
+        ON DELETE CASCADE,
+    FOREIGN KEY (course)
+        REFERENCES pm105_Course(course)
+        ON DELETE CASCADE
 );
- 
-CREATE TABLE Enroll (
-    regno      VARCHAR(12) NOT NULL,
-    course_no  INT         NOT NULL,
-    sem        INT         NOT NULL,
-    marks      INT,
-    CONSTRAINT pk_enroll PRIMARY KEY (regno, course_no, sem),
-    CONSTRAINT fk_enr_stu    FOREIGN KEY (regno)     REFERENCES Student(regno)    ON DELETE CASCADE,
-    CONSTRAINT fk_enr_course FOREIGN KEY (course_no) REFERENCES Course(course_no) ON DELETE CASCADE,
-    CONSTRAINT chk_marks CHECK (marks BETWEEN 0 AND 100)
+
+CREATE TABLE pm105_TextBook (
+    bookIsbn INT NOT NULL,
+    book_title VARCHAR(40) NOT NULL,
+    publisher VARCHAR(25) NOT NULL,
+    author VARCHAR(25) NOT NULL,
+    PRIMARY KEY (bookIsbn)
 );
- 
-CREATE TABLE Book_adoption (
-    course_no  INT NOT NULL,
-    sem        INT NOT NULL,
-    book_isbn  INT NOT NULL,
-    CONSTRAINT pk_book_adopt PRIMARY KEY (course_no, sem, book_isbn),
-    CONSTRAINT fk_ba_course FOREIGN KEY (course_no) REFERENCES Course(course_no)   ON DELETE CASCADE,
-    CONSTRAINT fk_ba_book   FOREIGN KEY (book_isbn) REFERENCES Textbook(book_isbn) ON DELETE CASCADE
+
+CREATE TABLE pm105_BookAdoption (
+    course INT NOT NULL,
+    sem INT NOT NULL,
+    bookIsbn INT NOT NULL,
+    FOREIGN KEY (bookIsbn)
+        REFERENCES pm105_TextBook(bookIsbn)
+        ON DELETE CASCADE,
+    FOREIGN KEY (course)
+        REFERENCES pm105_Course(course)
+        ON DELETE CASCADE
 );
- 
-INSERT INTO Student VALUES
- ('01JST22CS001','Asha','CS','2004-05-12'),('01JST22CS002','Bharath','CS','2004-08-23'),
- ('01JST22EC003','Charan','EC','2003-12-01'),('01JST22IS004','Deepa','IS','2004-02-17'),
- ('01JST22ME005','Esha','ME','2004-11-30');
- 
-INSERT INTO Course VALUES
- (101,'DBMS','CS'),(102,'Operating Systems','CS'),(103,'Signals','EC'),
- (104,'Thermodynamics','ME'),(105,'Data Structures','IS');
- 
-INSERT INTO Textbook VALUES
- (1001,'Fundamentals of Database Systems','Pearson','Elmasri'),
- (1002,'Operating System Concepts','Wiley','Silberschatz'),
- (1003,'Signals and Systems','Pearson','Oppenheim'),
- (1004,'Engineering Thermodynamics','McGraw Hill','Nag'),
- (1005,'Data Structures in C','Cengage','Tenenbaum');
- 
-INSERT INTO Enroll VALUES
- ('01JST22CS001',101,5,88),('01JST22CS001',102,5,92),('01JST22CS002',101,5,76),
- ('01JST22EC003',103,5,81),('01JST22IS004',105,5,69),('01JST22ME005',104,5,73);
- 
-INSERT INTO Book_adoption VALUES
- (101,5,1001),(102,5,1002),(103,5,1003),(104,5,1004),(105,5,1005);
- 
--- ---- ALTER ----
-ALTER TABLE Student ADD COLUMN email VARCHAR(50);
-ALTER TABLE Course  ADD COLUMN credits INT DEFAULT 3;
-ALTER TABLE Course  DROP COLUMN credits;
- 
-ALTER TABLE Student ADD CONSTRAINT uq_stu_email UNIQUE (email);
-ALTER TABLE Student DROP INDEX uq_stu_email;
- 
-ALTER TABLE Enroll DROP CHECK chk_marks;
-ALTER TABLE Enroll ADD CONSTRAINT chk_marks CHECK (marks BETWEEN 0 AND 100);
- 
-ALTER TABLE Book_adoption DROP FOREIGN KEY fk_ba_book;
-ALTER TABLE Book_adoption ADD CONSTRAINT fk_ba_book
-      FOREIGN KEY (book_isbn) REFERENCES Textbook(book_isbn) ON DELETE CASCADE;
- 
--- ---- UPDATE / DELETE ----
-UPDATE Enroll  SET marks = marks + 5 WHERE course_no = 101 AND marks < 80;
-UPDATE Student SET major = 'IS' WHERE regno = '01JST22CS002';
-UPDATE Textbook SET publisher = 'Pearson Education' WHERE book_isbn = 1001;
- 
-DELETE FROM Enroll   WHERE regno = '01JST22ME005';
-DELETE FROM Student  WHERE regno = '01JST22ME005';
-DELETE FROM Book_adoption WHERE course_no = 104;
+
+
+-- ==========================================
+-- 3. INSERTING RECORDS
+-- ==========================================
+
+INSERT INTO pm105_Student VALUES
+("01HF235", "Student_1", "CSE", "2001-05-15"),
+("01HF354", "Student_2", "Literature", "2002-06-10"),
+("01HF254", "Student_3", "Philosophy", "2000-04-04"),
+("01HF653", "Student_4", "History", "2003-10-12"),
+("01HF234", "Student_5", "Computer Economics", "2001-10-10");
+
+
+INSERT INTO pm105_Course VALUES
+(001, "DBMS", "CS"),
+(002, "Literature", "English"),
+(003, "Philosophy", "Philosphy"),
+(004, "History", "Social Science"),
+(005, "Computer Economics", "CS");
+
+
+INSERT INTO pm105_Enroll VALUES
+("01HF235", 001, 5, 85),
+("01HF354", 002, 6, 87),
+("01HF254", 003, 3, 95),
+("01HF653", 004, 3, 80),
+("01HF234", 005, 5, 75);
+
+
+INSERT INTO pm105_TextBook VALUES
+(241563, "Operating Systems", "Pearson", "Silberschatz"),
+(532678, "Complete Works of Shakesphere", "Oxford", "Shakesphere"),
+(453723, "Immanuel Kant", "Delphi Classics", "Immanuel Kant"),
+(278345, "History of the world", "The Times", "Richard Overy"),
+(426784, "Behavioural Economics", "Pearson", "David Orrel");
+
+
+INSERT INTO pm105_BookAdoption VALUES
+(001, 5, 241563),
+(002, 6, 532678),
+(003, 3, 453723),
+(004, 3, 278345),
+(001, 6, 426784);
+
+
+-- ==========================================
+-- 4. DISPLAY ALL TABLES
+-- ==========================================
+
+SELECT * FROM pm105_Student;
+
+SELECT * FROM pm105_Course;
+
+SELECT * FROM pm105_Enroll;
+
+SELECT * FROM pm105_BookAdoption;
+
+SELECT * FROM pm105_TextBook;
+
+
+-- ==========================================
+-- 5. ADD A NEW TEXTBOOK
+-- AND ADOPT IT FOR A COURSE
+-- ==========================================
+
+INSERT INTO pm105_TextBook VALUES
+(123456, "Chandan The Autobiography", "Pearson", "Chandan");
+
+SELECT * FROM pm105_TextBook;
+
+
+INSERT INTO pm105_BookAdoption VALUES
+(001, 5, 123456);
+
+SELECT * FROM pm105_BookAdoption;
+
+
+-- ==========================================
+-- 6. BOOKS FOR CS DEPARTMENT COURSES
+-- THAT USE MORE THAN TWO BOOKS
+-- ==========================================
+
+SELECT c.course, t.bookIsbn, t.book_title
+FROM pm105_Course c,
+     pm105_BookAdoption ba,
+     pm105_TextBook t
+WHERE c.course = ba.course
+AND ba.bookIsbn = t.bookIsbn
+AND c.dept = 'CS'
+AND 2 < (
+    SELECT COUNT(bookIsbn)
+    FROM pm105_BookAdoption b
+    WHERE c.course = b.course
+)
+ORDER BY t.book_title;
+
+
+-- ==========================================
+-- 7. DEPARTMENTS HAVING ALL ADOPTED BOOKS
+-- PUBLISHED BY A SPECIFIC PUBLISHER
+-- ==========================================
+
+SELECT DISTINCT c.dept
+FROM pm105_Course c
+WHERE c.dept IN
+(
+    SELECT c.dept
+    FROM pm105_Course c,
+         pm105_BookAdoption b,
+         pm105_TextBook t
+    WHERE c.course = b.course
+    AND t.bookIsbn = b.bookIsbn
+    AND t.publisher = 'PEARSON'
+)
+AND c.dept NOT IN
+(
+    SELECT c.dept
+    FROM pm105_Course c,
+         pm105_BookAdoption b,
+         pm105_TextBook t
+    WHERE c.course = b.course
+    AND t.bookIsbn = b.bookIsbn
+    AND t.publisher != 'PEARSON'
+);
+
+
+-- ==========================================
+-- 8. STUDENTS WHO SCORED MAXIMUM MARKS
+-- IN DBMS COURSE
+-- ==========================================
+
+SELECT name
+FROM pm105_Student s,
+     pm105_Enroll e,
+     pm105_Course c
+WHERE s.regno = e.regno
+AND e.course = c.course
+AND c.cname = "DBMS"
+AND e.marks IN
+(
+    SELECT MAX(marks)
+    FROM pm105_Enroll e1,
+         pm105_Course c1
+    WHERE c1.cname = "DBMS"
+    AND c1.course = e1.course
+);
+
+
+-- ==========================================
+-- 9. CREATE VIEW
+-- DISPLAY COURSES OPTED BY A STUDENT
+-- ALONG WITH MARKS OBTAINED
+-- ==========================================
+
+CREATE VIEW pm105_CoursesOptedByStudent AS
+SELECT c.cname, e.marks
+FROM pm105_Course c,
+     pm105_Enroll e
+WHERE e.course = c.course
+AND e.regno = "01HF235";
+
+
+-- DISPLAY VIEW
+
+SELECT * FROM pm105_CoursesOptedByStudent;
+
+
+-- ==========================================
+-- 10. CREATE TRIGGER
+-- PREVENT ENROLLMENT IF MARKS ARE BELOW 40
+-- ==========================================
+
+DELIMITER //
+
+CREATE TRIGGER pm105_PreventEnrollment
+BEFORE INSERT ON pm105_Enroll
+FOR EACH ROW
+BEGIN
+
+    IF (NEW.marks < 40) THEN
+
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Marks below threshold';
+
+    END IF;
+
+END//
+
+DELIMITER ;
+
+
+-- ==========================================
+-- 11. TEST THE TRIGGER
+-- ==========================================
+
+INSERT INTO pm105_Enroll VALUES
+("01HF235", 002, 5, 5);
+
+
+-- DISPLAY ENROLLMENT RECORDS
+
+SELECT * FROM pm105_Enroll;
